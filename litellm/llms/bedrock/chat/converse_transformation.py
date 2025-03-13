@@ -36,7 +36,6 @@ from litellm.utils import add_dummy_tool, has_tool_call_blocks
 
 from ..common_utils import BedrockError, BedrockModelInfo, get_bedrock_tool_name
 
-
 class AmazonConverseConfig(BaseConfig):
     """
     Reference - https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html
@@ -232,7 +231,7 @@ class AmazonConverseConfig(BaseConfig):
                     continue
 
                 """
-                Follow similar approach to anthropic - translate to a single tool call. 
+                Follow similar approach to anthropic - translate to a single tool call.
 
                 When using tools in this way: - https://docs.anthropic.com/en/docs/build-with-claude/tool-use#json-mode
                 - You usually want to provide a single tool
@@ -420,10 +419,12 @@ class AmazonConverseConfig(BaseConfig):
         )
         inference_params.pop("json_mode", None)  # used for handling json_schema
 
+        additional_request_params = inference_params.pop("additionalModelRequestFields", {})
         # keep supported params in 'inference_params', and set all model-specific params in 'additional_request_params'
-        additional_request_params = {
+        additional_request_params.update({
             k: v for k, v in inference_params.items() if k not in total_supported_params
-        }
+        })
+
         inference_params = {
             k: v for k, v in inference_params.items() if k in total_supported_params
         }
@@ -637,11 +638,11 @@ class AmazonConverseConfig(BaseConfig):
             )
 
         """
-        Bedrock Response Object has optional message block 
+        Bedrock Response Object has optional message block
 
         completion_response["output"].get("message", None)
 
-        A message block looks like this (Example 1): 
+        A message block looks like this (Example 1):
         "output": {
             "message": {
                 "role": "assistant",
