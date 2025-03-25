@@ -53,7 +53,7 @@ const sidebars = {
         {
           type: "category",
           label: "Architecture",
-          items: ["proxy/architecture", "proxy/db_info", "router_architecture", "proxy/user_management_heirarchy", "proxy/jwt_auth_arch"],
+          items: ["proxy/architecture", "proxy/db_info", "router_architecture", "proxy/user_management_heirarchy", "proxy/jwt_auth_arch", "proxy/image_handling"],
         },
         {
           type: "link",
@@ -101,7 +101,9 @@ const sidebars = {
             "proxy/admin_ui_sso",
             "proxy/self_serve",
             "proxy/public_teams",
-            "proxy/custom_sso"
+            "proxy/custom_sso",
+            "proxy/ui_credentials",
+            "proxy/ui_logs"
           ],
         },
         {
@@ -231,6 +233,7 @@ const sidebars = {
         "providers/sambanova",
         "providers/custom_llm_server",
         "providers/petals",
+        "providers/snowflake"
       ],
     },
     {
@@ -240,7 +243,9 @@ const sidebars = {
         "exception_mapping",
         "completion/provider_specific_params",
         "guides/finetuned_models",
+        "guides/security_settings",
         "completion/audio",
+        "completion/web_search",
         "completion/document_understanding",
         "completion/vision",
         "completion/json_mode",
@@ -290,6 +295,7 @@ const sidebars = {
         "text_completion",
         "embedding/supported_embedding",
         "anthropic_unified",
+        "mcp",
         {
           type: "category",
           label: "/images",
@@ -298,6 +304,7 @@ const sidebars = {
             "image_variations",
           ]
         },
+        "mcp",
         {
           type: "category",
           label: "/audio",
@@ -362,8 +369,12 @@ const sidebars = {
       ],
     },
     {
-      type: "doc",
-      id: "proxy/prompt_management"
+      type: "category",
+      label: "[Beta] Prompt Management",
+      items: [
+        "proxy/prompt_management",
+        "proxy/custom_prompt_management"
+      ],
     },
     {
       type: "category",
@@ -389,6 +400,7 @@ const sidebars = {
         "observability/logfire_integration",
         "observability/argilla",
         "observability/arize_integration",
+        "observability/phoenix_integration",
         "debugging/local_debugging",
         "observability/raw_request_response",
         "observability/custom_callback",
