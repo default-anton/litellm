@@ -72,7 +72,6 @@ from litellm.integrations.custom_logger import CustomLogger
 from litellm.litellm_core_utils.logging_callback_manager import LoggingCallbackManager
 import httpx
 import dotenv
-from enum import Enum
 
 litellm_mode = os.getenv("LITELLM_MODE", "DEV")  # "PRODUCTION", "DEV"
 if litellm_mode == "DEV":
@@ -113,6 +112,11 @@ _custom_logger_compatible_callbacks_literal = Literal[
     "pagerduty",
     "humanloop",
     "gcs_pubsub",
+    "agentops",
+    "anthropic_cache_control_hook",
+    "bedrock_vector_store",
+    "generic_api",
+    "resend_email",
 ]
 logged_real_time_event_types: Optional[Union[List[str], Literal["*"]]] = None
 _known_custom_logger_compatible_callbacks: List = list(
@@ -129,6 +133,9 @@ argilla_batch_size: Optional[int] = None
 datadog_use_v1: Optional[bool] = False  # if you want to use v1 datadog logged payload
 gcs_pub_sub_use_v1: Optional[bool] = (
     False  # if you want to use v1 gcs pubsub logged payload
+)
+generic_api_use_v1: Optional[bool] = (
+    False  # if you want to use v1 generic api logged payload
 )
 argilla_transformation_object: Optional[Dict[str, Any]] = None
 _async_input_callback: List[Union[str, Callable, CustomLogger]] = (
@@ -162,7 +169,7 @@ token: Optional[str] = (
 telemetry = True
 max_tokens: int = DEFAULT_MAX_TOKENS  # OpenAI Defaults
 drop_params = bool(os.getenv("LITELLM_DROP_PARAMS", False))
-modify_params = False
+modify_params = bool(os.getenv("LITELLM_MODIFY_PARAMS", False))
 retry = True
 ### AUTH ###
 api_key: Optional[str] = None
@@ -188,6 +195,7 @@ predibase_tenant_id: Optional[str] = None
 togetherai_api_key: Optional[str] = None
 cloudflare_api_key: Optional[str] = None
 baseten_key: Optional[str] = None
+llama_api_key: Optional[str] = None
 aleph_alpha_key: Optional[str] = None
 nlp_cloud_key: Optional[str] = None
 snowflake_key: Optional[str] = None
@@ -324,6 +332,7 @@ from litellm.litellm_core_utils.get_model_cost_map import get_model_cost_map
 
 model_cost = get_model_cost_map(url=model_cost_map_url)
 custom_prompt_dict: Dict[str, dict] = {}
+check_provider_endpoint = False
 
 
 ####### THREAD-SPECIFIC DATA ####################
@@ -350,6 +359,7 @@ project = None
 config_path = None
 vertex_ai_safety_settings: Optional[dict] = None
 BEDROCK_CONVERSE_MODELS = [
+    "anthropic.claude-3-7-sonnet-20250219-v1:0",
     "anthropic.claude-3-5-haiku-20241022-v1:0",
     "anthropic.claude-3-5-sonnet-20241022-v2:0",
     "anthropic.claude-3-5-sonnet-20240620-v1:0",
@@ -413,6 +423,7 @@ deepseek_models: List = []
 azure_ai_models: List = []
 jina_ai_models: List = []
 voyage_models: List = []
+infinity_models: List = []
 databricks_models: List = []
 cloudflare_models: List = []
 codestral_models: List = []
@@ -427,6 +438,7 @@ galadriel_models: List = []
 sambanova_models: List = []
 assemblyai_models: List = []
 snowflake_models: List = []
+llama_models: List = []
 
 
 def is_bedrock_pricing_only_model(key: str) -> bool:
@@ -550,10 +562,14 @@ def add_known_models():
             xai_models.append(key)
         elif value.get("litellm_provider") == "deepseek":
             deepseek_models.append(key)
+        elif value.get("litellm_provider") == "meta_llama":
+            llama_models.append(key)
         elif value.get("litellm_provider") == "azure_ai":
             azure_ai_models.append(key)
         elif value.get("litellm_provider") == "voyage":
             voyage_models.append(key)
+        elif value.get("litellm_provider") == "infinity":
+            infinity_models.append(key)
         elif value.get("litellm_provider") == "databricks":
             databricks_models.append(key)
         elif value.get("litellm_provider") == "cloudflare":
@@ -642,6 +658,7 @@ model_list = (
     + deepseek_models
     + azure_ai_models
     + voyage_models
+    + infinity_models
     + databricks_models
     + cloudflare_models
     + codestral_models
@@ -657,6 +674,7 @@ model_list = (
     + assemblyai_models
     + jina_ai_models
     + snowflake_models
+    + llama_models
 )
 
 model_list_set = set(model_list)
@@ -697,6 +715,7 @@ models_by_provider: dict = {
     "mistral": mistral_chat_models,
     "azure_ai": azure_ai_models,
     "voyage": voyage_models,
+    "infinity": infinity_models,
     "databricks": databricks_models,
     "cloudflare": cloudflare_models,
     "codestral": codestral_models,
@@ -713,6 +732,7 @@ models_by_provider: dict = {
     "assemblyai": assemblyai_models,
     "jina_ai": jina_ai_models,
     "snowflake": snowflake_models,
+    "meta_llama": llama_models,
 }
 
 # mapping for those models which have larger equivalents
@@ -839,6 +859,7 @@ from .llms.infinity.rerank.transformation import InfinityRerankConfig
 from .llms.jina_ai.rerank.transformation import JinaAIRerankConfig
 from .llms.clarifai.chat.transformation import ClarifaiConfig
 from .llms.ai21.chat.transformation import AI21ChatConfig, AI21ChatConfig as AI21Config
+from .llms.meta_llama.chat.transformation import LlamaAPIConfig
 from .llms.anthropic.experimental_pass_through.messages.transformation import (
     AnthropicMessagesConfig,
 )
@@ -944,9 +965,11 @@ from .llms.topaz.image_variations.transformation import TopazImageVariationConfi
 from litellm.llms.openai.completion.transformation import OpenAITextCompletionConfig
 from .llms.groq.chat.transformation import GroqChatConfig
 from .llms.voyage.embedding.transformation import VoyageEmbeddingConfig
+from .llms.infinity.embedding.transformation import InfinityEmbeddingConfig
 from .llms.azure_ai.chat.transformation import AzureAIStudioConfig
 from .llms.mistral.mistral_chat_transformation import MistralConfig
 from .llms.openai.responses.transformation import OpenAIResponsesAPIConfig
+from .llms.azure.responses.transformation import AzureOpenAIResponsesAPIConfig
 from .llms.openai.chat.o_series_transformation import (
     OpenAIOSeriesConfig as OpenAIO1Config,  # maintain backwards compatibility
     OpenAIOSeriesConfig,
@@ -1003,6 +1026,7 @@ from .llms.azure.azure import (
 from .llms.azure.chat.gpt_transformation import AzureOpenAIConfig
 from .llms.azure.completion.transformation import AzureOpenAITextConfig
 from .llms.hosted_vllm.chat.transformation import HostedVLLMChatConfig
+from .llms.llamafile.chat.transformation import LlamafileChatConfig
 from .llms.litellm_proxy.chat.transformation import LiteLLMProxyChatConfig
 from .llms.vllm.completion.transformation import VLLMConfig
 from .llms.deepseek.chat.transformation import DeepSeekChatConfig
@@ -1057,6 +1081,11 @@ from .types.adapter import AdapterItem
 import litellm.anthropic_interface as anthropic
 
 adapters: List[AdapterItem] = []
+
+### Vector Store Registry ###
+from .vector_stores.vector_store_registry import VectorStoreRegistry
+
+vector_store_registry: Optional[VectorStoreRegistry] = None
 
 ### CUSTOM LLMs ###
 from .types.llms.custom_llm import CustomLLMItem
