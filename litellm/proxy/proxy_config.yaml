@@ -1,9 +1,8 @@
 model_list:
-  - model_name: openai/gpt-4o
+  - model_name: openai/*
     litellm_params:
-      model: openai/gpt-4o
-      api_key: os.environ/OPENAI_API_KEY
+      model: openai/*
 
 
 litellm_settings:
-    callbacks: ["resend_email"]
+  disable_token_counter: True
