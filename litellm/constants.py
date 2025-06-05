@@ -36,6 +36,9 @@ SINGLE_DEPLOYMENT_TRAFFIC_FAILURE_THRESHOLD = int(
     os.getenv("SINGLE_DEPLOYMENT_TRAFFIC_FAILURE_THRESHOLD", 1000)
 )  # Minimum number of requests to consider "reasonable traffic". Used for single-deployment cooldown logic.
 
+DEFAULT_REASONING_EFFORT_DISABLE_THINKING_BUDGET = int(
+    os.getenv("DEFAULT_REASONING_EFFORT_DISABLE_THINKING_BUDGET", 0)
+)
 DEFAULT_REASONING_EFFORT_LOW_THINKING_BUDGET = int(
     os.getenv("DEFAULT_REASONING_EFFORT_LOW_THINKING_BUDGET", 1024)
 )
@@ -297,6 +300,15 @@ OPENAI_TRANSCRIPTION_PARAMS = [
     "response_format",
     "timestamp_granularities",
 ]
+
+OPENAI_EMBEDDING_PARAMS = ["dimensions", "encoding_format", "user"]
+
+DEFAULT_EMBEDDING_PARAM_VALUES = {
+    **{k: None for k in OPENAI_EMBEDDING_PARAMS},
+    "model": None,
+    "custom_llm_provider": "",
+    "input": None,
+}
 
 DEFAULT_CHAT_COMPLETION_PARAM_VALUES = {
     "functions": None,
